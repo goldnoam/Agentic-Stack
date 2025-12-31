@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #050505;
+  --foreground: #f8fafc;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.code-font {
+  font-family: 'Fira Code', monospace;
+}
+
+/* Custom Scrollbar for Production Aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Selection highlight */
+::selection {
+  background: rgba(79, 70, 229, 0.3);
+  color: #fff;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-500 px-10 py-4 rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-900/30 active:scale-95 text-lg inline-block;
+  }
+  
+  .btn-secondary {
+    @apply bg-slate-900/50 hover:bg-slate-800 px-10 py-4 rounded-2xl font-bold border border-slate-800 transition-all active:scale-95 text-lg backdrop-blur-sm inline-block;
+  }
+  
+  .card-gradient {
+    @apply bg-slate-900/40 border border-slate-800 rounded-3xl backdrop-blur-sm;
+  }
+}
