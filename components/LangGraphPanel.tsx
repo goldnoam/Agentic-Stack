@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 const LangGraphPanel: React.FC = () => {
@@ -11,40 +10,36 @@ from typing import TypedDict, Annotated, Sequence
 import operator
 
 # 1. THE AGENT STATE
-# This TypedDict defines the structure of the graph's memory.
-# Every node receives this state and can return updates to it.
 class AgentState(TypedDict):
-    # 2. STATE MERGING (The Reducer)
-    # Using Annotated with operator.add tells LangGraph to 
-    # APPEND new messages to the existing list instead of 
-    # overwriting the entire history. This is vital for 
-    # maintaining conversation context across cycles.
+    # 'Annotated' with 'operator.add' enables list appending
     messages: Annotated[Sequence[BaseMessage], operator.add]
 
-# Define tools for the agent to use
+# 2. DEFINING THE TOOL NODE
+# This component acts as the "Hands" of your agent.
+# It automatically maps tool requests to function execution.
 tools = [web_scraper_tool, analytics_api_tool]
 tool_node = ToolNode(tools)
 
 workflow = StateGraph(AgentState)
 
-# Define nodes: Brain (LLM) and Hands (Tools)
+# 3. INTEGRATING INTO THE WORKFLOW
+# We add the ToolNode like any other node in the graph.
 workflow.add_node("agent", call_model)
 workflow.add_node("tools", tool_node)
 
-# Entry point starts with the agent
 workflow.set_entry_point("agent")
 
-# Logic to determine if we need a tool or if we are done
+# Use conditional edges to route to 'tools' if the LLM 
+# provides 'tool_calls', otherwise finish.
 workflow.add_conditional_edges(
     "agent",
-    should_continue, # Routing logic based on tool_calls presence
+    should_continue,
     {"tools": "tools", END: END}
 )
 
-# After tool execution, always return to the agent for evaluation
+# Return to agent after tools finish for a new thought cycle
 workflow.add_edge("tools", "agent")
 
-# Compile into a Runnable
 app = workflow.compile()`,
     tools: `from langchain_core.tools import tool
 import httpx
@@ -180,19 +175,30 @@ app = workflow.compile()`
             </pre>
             
             {activeTab === 'graph' && (
-              <div className="mt-6 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl space-y-3">
+              <div className="mt-6 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl space-y-4">
                 <h4 className="text-sm font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                  Concept Breakdown: State Persistence
+                  Concept Breakdown: Tool Integration
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400 leading-relaxed">
-                  <div>
-                    <strong className="text-slate-200">AgentState TypedDict:</strong>
-                    <p>Defines the shared memory of the graph. It is the single source of truth passed between nodes, ensuring every agent knows the full context.</p>
+                <div className="grid grid-cols-1 gap-4 text-xs text-slate-400 leading-relaxed">
+                  <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <strong className="text-slate-200 block mb-1">The ToolNode:</strong>
+                    <p>
+                      ToolNode is a pre-built utility that automates the execution of external tools. 
+                      Instead of manually writing logic to parse LLM <code>tool_calls</code>, the node intercepts the 
+                      state, executes the requested Python functions, and feeds the <code>ToolMessage</code> 
+                      outputs back into the conversation history.
+                    </p>
                   </div>
-                  <div>
-                    <strong className="text-slate-200">Annotated & operator.add:</strong>
-                    <p>This is a "Reducer". It instructs LangGraph to append new node outputs to the existing state instead of replacing it, which is critical for message history.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <strong className="text-slate-200">Initialization:</strong>
+                      <p className="mt-1"><code>tool_node = ToolNode(list_of_tools)</code> binds your business logic to the graph environment.</p>
+                    </div>
+                    <div>
+                      <strong className="text-slate-200">Execution Loop:</strong>
+                      <p className="mt-1">By routing back from 'tools' to 'agent', the model can observe tool outputs and decide if it needs to act again or provide a final answer.</p>
+                    </div>
                   </div>
                 </div>
               </div>
