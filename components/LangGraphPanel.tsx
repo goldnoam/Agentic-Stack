@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 const LangGraphPanel: React.FC = () => {
@@ -9,35 +10,35 @@ from langgraph.prebuilt import ToolNode
 from typing import TypedDict, Annotated, Sequence
 import operator
 
-# 1. THE AGENT STATE
+# --- THE AGENT STATE ---
+# TypedDict acts as the 'schema' for the graph's internal database.
 class AgentState(TypedDict):
-    # 'Annotated' with 'operator.add' enables list appending
+    # 'Annotated' allows us to attach metadata to the type.
+    # 'operator.add' acts as a REDUCER: it tells LangGraph to
+    # merge new node outputs by adding them to the existing list
+    # instead of replacing the entire key.
     messages: Annotated[Sequence[BaseMessage], operator.add]
 
-# 2. DEFINING THE TOOL NODE
-# This component acts as the "Hands" of your agent.
-# It automatically maps tool requests to function execution.
+# --- TOOL INTEGRATION ---
 tools = [web_scraper_tool, analytics_api_tool]
 tool_node = ToolNode(tools)
 
 workflow = StateGraph(AgentState)
 
-# 3. INTEGRATING INTO THE WORKFLOW
-# We add the ToolNode like any other node in the graph.
+# Define nodes: Brain (LLM) and Hands (Tools)
 workflow.add_node("agent", call_model)
 workflow.add_node("tools", tool_node)
 
 workflow.set_entry_point("agent")
 
-# Use conditional edges to route to 'tools' if the LLM 
-# provides 'tool_calls', otherwise finish.
+# Logic to determine if we need a tool or if we are done
 workflow.add_conditional_edges(
     "agent",
-    should_continue,
+    should_continue, # Checks for presence of 'tool_calls'
     {"tools": "tools", END: END}
 )
 
-# Return to agent after tools finish for a new thought cycle
+# After tool execution, always return to the agent
 workflow.add_edge("tools", "agent")
 
 app = workflow.compile()`,
@@ -178,27 +179,26 @@ app = workflow.compile()`
               <div className="mt-6 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl space-y-4">
                 <h4 className="text-sm font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
-                  Concept Breakdown: Tool Integration
+                  Concept Breakdown: State Management
                 </h4>
-                <div className="grid grid-cols-1 gap-4 text-xs text-slate-400 leading-relaxed">
-                  <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800">
-                    <strong className="text-slate-200 block mb-1">The ToolNode:</strong>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-400 leading-relaxed">
+                  <div className="space-y-2">
+                    <strong className="text-slate-200 block">AgentState (TypedDict)</strong>
                     <p>
-                      ToolNode is a pre-built utility that automates the execution of external tools. 
-                      Instead of manually writing logic to parse LLM <code>tool_calls</code>, the node intercepts the 
-                      state, executes the requested Python functions, and feeds the <code>ToolMessage</code> 
-                      outputs back into the conversation history.
+                      This is the graph's schema. It defines what data is available to nodes. In a conversation, the state usually contains a list of messages. Using a TypedDict allows for static type checking across your agent's reasoning chain.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <strong className="text-slate-200">Initialization:</strong>
-                      <p className="mt-1"><code>tool_node = ToolNode(list_of_tools)</code> binds your business logic to the graph environment.</p>
-                    </div>
-                    <div>
-                      <strong className="text-slate-200">Execution Loop:</strong>
-                      <p className="mt-1">By routing back from 'tools' to 'agent', the model can observe tool outputs and decide if it needs to act again or provide a final answer.</p>
-                    </div>
+                  <div className="space-y-2">
+                    <strong className="text-slate-200 block">Reducers (Annotated + operator.add)</strong>
+                    <p>
+                      By default, a node overwrites its key in the state. <code>Annotated[T, operator.add]</code> specifies a "reducer" function. It tells LangGraph: "When a node returns a list of messages, don't replace the history—append to it." This is how context is preserved through cyclic loops.
+                    </p>
+                  </div>
+                  <div className="col-span-1 md:col-span-2 p-3 bg-slate-950/50 rounded-lg border border-slate-800">
+                    <strong className="text-slate-200 block mb-1">ToolNode Functionality</strong>
+                    <p>
+                      ToolNode acts as a automated execution layer. When your LLM outputs <code>tool_calls</code>, the ToolNode intercepts them, executes the corresponding Python functions, and automatically appends the results (ToolMessages) to your State, allowing the model to see the output in the next cycle.
+                    </p>
                   </div>
                 </div>
               </div>
