@@ -1,0 +1,5 @@
+{
+  "name": "UIA + FastAPI + LangGraph + Docker",
+  "description": "A high-performance blueprint for agentic AI applications using Next.js, FastAPI, LangGraph, and Docker.",
+  "requestFramePermissions": []
+}
